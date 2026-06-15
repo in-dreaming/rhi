@@ -1,0 +1,8 @@
+[submodule "modules/3rd/sdl"]
+	path = modules/3rd/sdl
+	url = https://github.com/in-dreaming/SDL.git
+	branch = sdl_enjin_rhi
+[submodule "modules/3rd/slang"]
+	path = modules/3rd/slang
+	url = https://github.com/in-dreaming/slang.git
+	branch = slang_enjin
