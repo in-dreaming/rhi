@@ -31,7 +31,14 @@ PowerShell 一键设置：
 
 ```powershell
 $b = "G:\work\tech\infra\rhi\build\msvc-vulkan"
-$env:PATH = "$b\RelWithDebInfo\bin;$b\modules\rhi\RelWithDebInfo;$b\modules\3rd\sdl\RelWithDebInfo;$b\examples\HelloWorld\RelWithDebInfo;" + $env:PATH
+$env:PATH = "$b\RelWithDebInfo\bin;$b\modules\rhi\RelWithDebInfo;$b\modules\3rd\sdl\RelWithDebInfo;" + $env:PATH
+```
+
+从任意路径运行：
+
+```powershell
+# 着色器已随构建自动复制到 exe 同级 shaders/ 目录
+& "$b\examples\HelloWorld\RelWithDebInfo\HelloWorld.exe"
 ```
 
 ---

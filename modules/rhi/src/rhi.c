@@ -223,6 +223,12 @@ void RHI_DeviceWaitIdle(RHI_Device *device)
     SDL_WaitForGPUIdle(device->sdlDevice);
 }
 
+RHI_Backend RHI_GetDeviceBackend(RHI_Device *device)
+{
+    if (!device) return RHI_BACKEND_VULKAN;
+    return device->backend;
+}
+
 RHI_Queue *RHI_GetQueue(RHI_Device *device, RHI_QueueType type, uint32_t index)
 {
     if (!device || !device->sdlDevice) return NULL;
@@ -272,7 +278,7 @@ RHI_Swapchain *RHI_CreateSwapchain(RHI_Device *device, const RHI_SwapchainCreate
     if (!sc) return NULL;
 
     sc->device = device;
-    sc->sdlWindow = (SDL_Window *)info->windowHandle;
+    sc->sdlWindow = (SDL_Window *)info->window;
     sc->format = info->format;
     sc->width = info->width;
     sc->height = info->height;
@@ -330,6 +336,19 @@ RHI_Format RHI_GetSwapchainFormat(RHI_Swapchain *swapchain)
 void RHI_SetSwapchainCommandBuffer(RHI_Swapchain *swapchain, RHI_CommandBuffer *cmd)
 {
     if (swapchain) swapchain->pendingCB = cmd;
+}
+
+void RHI_ResizeSwapchain(RHI_Swapchain *swapchain, uint32_t width, uint32_t height)
+{
+    if (!swapchain) return;
+    swapchain->width = width;
+    swapchain->height = height;
+}
+
+RHI_TextureHandle RHI_AcquireSwapchainTexture(RHI_Swapchain *swapchain)
+{
+    RHI_TextureHandle handle = {0};
+    return handle;
 }
 
 /* ------ Buffer ------ */
@@ -684,9 +703,9 @@ void RHI_EndCommandBuffer(RHI_CommandBuffer *cmd)
 /* ------ Command recording ------ */
 
 void RHI_CmdBeginRenderPass(RHI_CommandBuffer *cmd,
-                              const RHI_ColorTargetInfo *colorTargets,
-                              uint32_t colorTargetCount,
-                              const RHI_DepthStencilTargetInfo *depthStencil)
+                               const RHI_ColorAttachmentDesc *colorTargets,
+                               uint32_t colorTargetCount,
+                               const RHI_DepthAttachmentDesc *depthStencil)
 {
     if (!cmd || !cmd->sdlCB) return;
 

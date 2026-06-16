@@ -1,6 +1,7 @@
 #include <rhi/rhi.h>
 #include <rhi/defs.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_gpu.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,12 +18,12 @@ static const Vertex kVertices[] = {
     { -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f },
 };
 
-static RHI_Device        *g_device     = NULL;
-static RHI_Swapchain     *g_swapchain  = NULL;
-static RHI_Buffer        *g_vertex_buf = NULL;
-static RHI_Buffer        *g_upload_buf = NULL;
-static RHI_GraphicsPipeline *g_pipeline = NULL;
-static SDL_Window        *g_window     = NULL;
+static RHI_Device           *g_device     = NULL;
+static RHI_Swapchain        *g_swapchain  = NULL;
+static RHI_Buffer           *g_vertex_buf = NULL;
+static RHI_Buffer           *g_upload_buf = NULL;
+static RHI_GraphicsPipeline *g_pipeline   = NULL;
+static SDL_Window           *g_window     = NULL;
 
 static bool load_shader_code(const char *path, uint8_t **outData, size_t *outSize)
 {
@@ -40,18 +41,42 @@ static bool load_shader_code(const char *path, uint8_t **outData, size_t *outSiz
     return true;
 }
 
+static const char *shader_ext_for_backend(RHI_Backend backend)
+{
+    switch (backend) {
+    case RHI_BACKEND_VULKAN: return "spv";
+    case RHI_BACKEND_D3D12:  return "dxil";
+    case RHI_BACKEND_METAL:  return "msl";
+    default:                 return "spv";
+    }
+}
+
+static bool try_load_shader(const char *ext, const char *entry_suffix, uint8_t **outCode, size_t *outSize)
+{
+    char path[512];
+    const char *base = SDL_GetBasePath();
+
+    snprintf(path, sizeof(path), "%s/shaders/tri-%s.%s", base ? base : ".", entry_suffix, ext);
+    if (load_shader_code(path, outCode, outSize)) return true;
+
+    snprintf(path, sizeof(path), "examples/HelloWorld/shaders/tri-%s.%s", entry_suffix, ext);
+    if (load_shader_code(path, outCode, outSize)) return true;
+
+    snprintf(path, sizeof(path), "shaders/tri-%s.%s", entry_suffix, ext);
+    if (load_shader_code(path, outCode, outSize)) return true;
+
+    return false;
+}
+
 static RHI_GraphicsPipeline *create_pipeline(RHI_Device *device)
 {
+    const char *ext = shader_ext_for_backend(RHI_GetDeviceBackend(device));
+
     uint8_t *vsCode = NULL;
     size_t vsSize = 0;
-    char vsPath[512];
-    snprintf(vsPath, sizeof(vsPath), "%s/shaders/tri-vert.spv", SDL_GetBasePath());
-    if (!load_shader_code(vsPath, &vsCode, &vsSize)) {
-        snprintf(vsPath, sizeof(vsPath), "examples/HelloWorld/shaders/tri-vert.spv");
-        if (!load_shader_code(vsPath, &vsCode, &vsSize)) {
-            fprintf(stderr, "Cannot load vertex shader\n");
-            return NULL;
-        }
+    if (!try_load_shader(ext, "vert", &vsCode, &vsSize)) {
+        fprintf(stderr, "Cannot load vertex shader (.%s)\n", ext);
+        return NULL;
     }
 
     RHI_ShaderModule *vs = RHI_CreateShaderModule(device, &(RHI_ShaderModuleCreateInfo){
@@ -65,15 +90,11 @@ static RHI_GraphicsPipeline *create_pipeline(RHI_Device *device)
 
     uint8_t *fsCode = NULL;
     size_t fsSize = 0;
-    char fsPath[512];
-    snprintf(fsPath, sizeof(fsPath), "%s/shaders/tri-frag.spv", SDL_GetBasePath());
-    if (!load_shader_code(fsPath, &fsCode, &fsSize)) {
-        snprintf(fsPath, sizeof(fsPath), "examples/HelloWorld/shaders/tri-frag.spv");
-        if (!load_shader_code(fsPath, &fsCode, &fsSize)) {
-            fprintf(stderr, "Cannot load fragment shader\n");
-            RHI_DestroyShaderModule(device, vs);
-            return NULL;
-        }
+    if (!try_load_shader(ext, "frag", &fsCode, &fsSize)) {
+        fprintf(stderr, "Cannot load fragment shader (.%s)\n", ext);
+        RHI_DestroyShaderModule(device, vs);
+        free(vsCode);
+        return NULL;
     }
 
     RHI_ShaderModule *fs = RHI_CreateShaderModule(device, &(RHI_ShaderModuleCreateInfo){
@@ -144,15 +165,17 @@ static bool init(void)
         fprintf(stderr, "Failed to create RHI device\n");
         return false;
     }
+    printf("RHI device created: backend=%d\n", RHI_GetDeviceBackend(g_device));
 
-    g_window = SDL_CreateWindow("RHI HelloWorld", 800, 600, 0);
-    if (!g_window) {
+    SDL_Window *window = SDL_CreateWindow("RHI HelloWorld", 800, 600, 0);
+    if (!window) {
         fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
         return false;
     }
+    g_window = window;
 
     RHI_SwapchainCreateInfo scInfo = {
-        .windowHandle = g_window,
+        .window = window,
         .width = 800,
         .height = 600,
         .vsync = true,
@@ -205,7 +228,7 @@ static bool init(void)
 
     g_pipeline = create_pipeline(g_device);
     if (!g_pipeline) {
-        fprintf(stderr, "Warning: pipeline creation failed (shaders not compiled yet?)\n");
+        fprintf(stderr, "Warning: pipeline creation failed\n");
     }
 
     return true;
@@ -218,71 +241,10 @@ static void shutdown(void)
     if (g_vertex_buf)  RHI_DestroyBuffer(g_device, g_vertex_buf);
     if (g_upload_buf)  RHI_DestroyBuffer(g_device, g_upload_buf);
     if (g_swapchain)   RHI_DestroySwapchain(g_device, g_swapchain);
-    if (g_device)      RHI_DestroyDevice(g_device);
     if (g_window)      SDL_DestroyWindow(g_window);
+    if (g_device)      RHI_DestroyDevice(g_device);
     SDL_Quit();
 }
-
-#ifdef SDL_MAIN_USE_CALLBACKS
-
-static SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
-{
-    return init() ? SDL_APP_CONTINUE : SDL_APP_FAILURE;
-}
-
-static SDL_AppResult SDL_AppIterate(void *appstate)
-{
-    RHI_CommandBuffer *cmd = RHI_AcquireCommandBuffer(g_device, RHI_QUEUE_GRAPHICS);
-    if (!cmd) return SDL_APP_CONTINUE;
-
-    RHI_BeginCommandBuffer(cmd);
-
-    RHI_Texture *swapTex = RHI_GetSwapchainTexture(g_swapchain);
-    if (swapTex && g_pipeline) {
-        RHI_ColorTargetInfo colorTarget = {0};
-        colorTarget.texture    = swapTex;
-        colorTarget.loadOp     = RHI_LOAD_OP_CLEAR;
-        colorTarget.storeOp    = RHI_STORE_OP_STORE;
-        colorTarget.clearR     = 0.1f;
-        colorTarget.clearG     = 0.1f;
-        colorTarget.clearB     = 0.1f;
-        colorTarget.clearA     = 1.0f;
-
-        RHI_CmdBeginRenderPass(cmd, &colorTarget, 1, NULL);
-        RHI_CmdBindGraphicsPipeline(cmd, g_pipeline);
-        RHI_CmdBindVertexBuffer(cmd, 0, g_vertex_buf, 0);
-        RHI_CmdDraw(cmd, 3, 1, 0, 0);
-        RHI_CmdEndRenderPass(cmd);
-    }
-
-    RHI_EndCommandBuffer(cmd);
-
-    RHI_SubmitInfo submitInfo = {
-        .commandBuffers = &cmd,
-        .commandBufferCount = 1,
-    };
-    RHI_Queue *queue = RHI_GetQueue(g_device, RHI_QUEUE_GRAPHICS, 0);
-    RHI_QueueSubmit(queue, &submitInfo, NULL);
-    RHI_Present(queue, g_swapchain);
-
-    free(cmd);
-    free(swapTex);
-    return SDL_APP_CONTINUE;
-}
-
-static SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
-{
-    if (event->type == SDL_EVENT_QUIT) return SDL_APP_SUCCESS;
-    if (event->type == SDL_EVENT_KEY_DOWN && event->key.key == SDLK_ESCAPE) return SDL_APP_SUCCESS;
-    return SDL_APP_CONTINUE;
-}
-
-static void SDL_AppQuit(void *appstate, SDL_AppResult result)
-{
-    shutdown();
-}
-
-#else
 
 int main(int argc, char *argv[])
 {
@@ -308,14 +270,14 @@ int main(int argc, char *argv[])
         RHI_SetSwapchainCommandBuffer(g_swapchain, cmd);
         RHI_Texture *swapTex = RHI_GetSwapchainTexture(g_swapchain);
         if (swapTex && g_pipeline) {
-            RHI_ColorTargetInfo colorTarget = {0};
-            colorTarget.texture    = swapTex;
-            colorTarget.loadOp     = RHI_LOAD_OP_CLEAR;
-            colorTarget.storeOp    = RHI_STORE_OP_STORE;
-            colorTarget.clearR     = 0.1f;
-            colorTarget.clearG     = 0.1f;
-            colorTarget.clearB     = 0.1f;
-            colorTarget.clearA     = 1.0f;
+            RHI_ColorAttachmentDesc colorTarget = {0};
+            colorTarget.texture = swapTex;
+            colorTarget.loadOp  = RHI_LOAD_OP_CLEAR;
+            colorTarget.storeOp = RHI_STORE_OP_STORE;
+            colorTarget.clearR  = 0.1f;
+            colorTarget.clearG  = 0.1f;
+            colorTarget.clearB  = 0.1f;
+            colorTarget.clearA  = 1.0f;
 
             RHI_CmdBeginRenderPass(cmd, &colorTarget, 1, NULL);
             RHI_CmdBindGraphicsPipeline(cmd, g_pipeline);
@@ -341,5 +303,3 @@ int main(int argc, char *argv[])
     shutdown();
     return 0;
 }
-
-#endif

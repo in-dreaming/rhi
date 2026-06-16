@@ -288,21 +288,21 @@ typedef struct RHI_SamplerCreateInfo {
 } RHI_SamplerCreateInfo;
 
 typedef struct RHI_SwapchainCreateInfo {
-    void     *windowHandle;
-    uint32_t  width;
-    uint32_t  height;
-    bool      vsync;
-    RHI_Format format;
+    void       *window;
+    uint32_t    width;
+    uint32_t    height;
+    bool        vsync;
+    RHI_Format  format;
 } RHI_SwapchainCreateInfo;
 
-typedef struct RHI_ColorTargetInfo {
+typedef struct RHI_ColorAttachmentDesc {
     RHI_Texture *texture;
     RHI_LoadOp   loadOp;
     RHI_StoreOp  storeOp;
     float        clearR, clearG, clearB, clearA;
-} RHI_ColorTargetInfo;
+} RHI_ColorAttachmentDesc;
 
-typedef struct RHI_DepthStencilTargetInfo {
+typedef struct RHI_DepthAttachmentDesc {
     RHI_Texture *texture;
     RHI_LoadOp   loadOp;
     RHI_StoreOp  storeOp;
@@ -310,7 +310,7 @@ typedef struct RHI_DepthStencilTargetInfo {
     uint8_t      clearStencil;
     bool         stencilLoadOp;
     bool         stencilStoreOp;
-} RHI_DepthStencilTargetInfo;
+} RHI_DepthAttachmentDesc;
 
 typedef struct RHI_VertexAttribute {
     uint32_t location;

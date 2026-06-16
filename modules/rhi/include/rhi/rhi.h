@@ -14,6 +14,7 @@ extern "C" {
 RHI_API RHI_Device *RHI_CreateDevice(const RHI_DeviceCreateInfo *info);
 RHI_API void        RHI_DestroyDevice(RHI_Device *device);
 RHI_API void        RHI_DeviceWaitIdle(RHI_Device *device);
+RHI_API RHI_Backend RHI_GetDeviceBackend(const RHI_Device *device);
 
 RHI_API RHI_Queue  *RHI_GetQueue(RHI_Device *device, RHI_QueueType type, uint32_t index);
 RHI_API void        RHI_QueueSubmit(RHI_Queue *queue, const RHI_SubmitInfo *info, RHI_Fence *fence);
@@ -94,9 +95,9 @@ RHI_API void RHI_EndCommandBuffer(RHI_CommandBuffer *cmd);
 /* ------------------------------------------------------------------ */
 
 RHI_API void RHI_CmdBeginRenderPass(RHI_CommandBuffer *cmd,
-                                    const RHI_ColorTargetInfo *colorTargets,
+                                    const RHI_ColorAttachmentDesc *colorTargets,
                                     uint32_t colorTargetCount,
-                                    const RHI_DepthStencilTargetInfo *depthStencil);
+                                    const RHI_DepthAttachmentDesc *depthStencil);
 RHI_API void RHI_CmdEndRenderPass(RHI_CommandBuffer *cmd);
 
 RHI_API void RHI_CmdBindGraphicsPipeline(RHI_CommandBuffer *cmd, RHI_GraphicsPipeline *pipeline);
