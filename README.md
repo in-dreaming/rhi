@@ -11,6 +11,8 @@ A next-gen RHI (Render Hardware Interface) based on SDL3 GPU + Slang.
 |-|-|
 | [docs/arch.md](docs/arch.md) | Architecture design (C API, generational handles, PIMPL, bindless, Render Graph, ...) |
 | [docs/roadmap.md](docs/roadmap.md) | Milestone roadmap (V0 → V3, 22 months) |
+| [docs/pitfalls.md](docs/pitfalls.md) | SDL3 GPU & Slang API 陷阱备忘（V0 实践总结） |
+| [docs/build.md](docs/build.md) | 构建系统、工具链、着色器编译指南 |
 | [docs/tasks/](docs/tasks/) | Detailed task breakdown per milestone |
 | [docs/research/](docs/research/) | Feature research notes |
 

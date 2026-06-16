@@ -1,0 +1,69 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+    "configurePresets": [
+        {
+            "name": "msvc-vulkan",
+            "displayName": "MSVC + Vulkan",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "SDL_SHARED": "ON",
+                "SDL_STATIC": "OFF",
+                "SLANG_ENABLE_CUDA": "OFF",
+                "SLANG_ENABLE_OPTIX": "OFF"
+            },
+            "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+        },
+        {
+            "name": "msvc-d3d12",
+            "displayName": "MSVC + D3D12",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "SDL_SHARED": "ON",
+                "SDL_STATIC": "OFF",
+                "SLANG_ENABLE_CUDA": "OFF",
+                "SLANG_ENABLE_OPTIX": "OFF",
+                "SDL_GPU_VULKAN": "OFF",
+                "SDL_GPU_D3D12": "ON"
+            },
+            "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+        },
+        {
+            "name": "ninja-vulkan",
+            "displayName": "Ninja + Vulkan",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "SDL_SHARED": "ON",
+                "SDL_STATIC": "OFF",
+                "SLANG_ENABLE_CUDA": "OFF",
+                "SLANG_ENABLE_OPTIX": "OFF"
+            }
+        },
+        {
+            "name": "clang-macos-metal",
+            "displayName": "Clang + Metal",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "SDL_SHARED": "ON",
+                "SDL_STATIC": "OFF",
+                "SLANG_ENABLE_CUDA": "OFF",
+                "SLANG_ENABLE_OPTIX": "OFF"
+            },
+            "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Darwin" }
+        }
+    ],
+    "buildPresets": [
+        { "name": "msvc-vulkan", "configurePreset": "msvc-vulkan", "configuration": "RelWithDebInfo" },
+        { "name": "msvc-d3d12", "configurePreset": "msvc-d3d12", "configuration": "RelWithDebInfo" },
+        { "name": "ninja-vulkan", "configurePreset": "ninja-vulkan" },
+        { "name": "clang-macos-metal", "configurePreset": "clang-macos-metal" }
+    ]
+}

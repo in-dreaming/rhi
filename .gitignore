@@ -1,3 +1,11 @@
 .zig-cache/
 zig-out/
 *.o
+build/
+.cache/
+compile_commands.json
+CMakeUserPresets.json
+*.sublime-workspace
+.vs/
+*.user
+x64/
